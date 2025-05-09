@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.12.12-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    hostname: rabbitmq-local
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+    - ./prometheus:/etc/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafanaa
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - monitoring
+
+  alertmanager:
+    image: prom/alertmanager
+    container_name: alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    networks:
+      - monitoring
+  rabbitmq_exporter:
+    image: kbudde/rabbitmq-exporter
+    container_name: rabbitmq_exporter
+    restart: unless-stopped
+    ports:
+      - "9419:9419"
+    environment:
+      RABBIT_URL: http://rabbitmq:15672
+      RABBIT_USER: guest
+      RABBIT_PASSWORD: guest
+      INCLUDE_QUEUES: ".*"
+    networks:
+      - monitoring
+  discord-alerts:
+    image: benjojo/alertmanager-discord
+    container_name: discord-alerts
+    restart: unless-stopped
+    environment:
+      DISCORD_WEBHOOK: https://discord.com/api/webhooks/1364518647099297882/Z0s6Z1y0iD6AZOlvHeIOYBqVOFivYyVN_fKTNDpBTI9kppE1v_Rx_D49P6GYwuu2xPwg
+    ports:
+      - "9094:9094"
+    networks:
+      - monitoring
+volumes:
+  grafana-storage:
+  rabbitmq-data:
+
+networks:
+  monitoring:

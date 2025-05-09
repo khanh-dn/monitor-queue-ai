@@ -1,0 +1,22 @@
+global:
+  resolve_timeout: 1m
+
+route:
+  group_wait: 5s
+  group_interval: 1m
+  repeat_interval: 15m
+  receiver: discord
+
+receivers:
+  - name: discord
+    webhook_configs:
+      - url: "http://discord-alerts:9094"
+        send_resolved: true
+
+inhibit_rules:
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal:
+      - service

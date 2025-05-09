@@ -1,0 +1,107 @@
+groups:
+  - name: rabbitmq-recording-and-alerts
+    interval: 30s
+    rules:
+      ### === Recording Rules: Gán nhãn service cho các queue ===
+      - record: rabbitmq_queue_messages_ready_with_service
+        expr: label_replace(rabbitmq_queue_messages_ready, "service", "$1", "queue", "^([a-zA-Z0-9]+)[_.].*")
+
+      - record: rabbitmq_queue_messages_unack_with_service
+        expr: label_replace(rabbitmq_queue_messages_unacknowledged, "service", "$1", "queue", "^([a-zA-Z0-9]+)[_.].*")
+
+      - record: rabbitmq_queue_messages_total_with_service
+        expr: label_replace(rabbitmq_queue_messages, "service", "$1", "queue", "^([a-zA-Z0-9]+)[_.].*")
+
+      - record: rabbitmq_queue_consumers_with_service
+        expr: label_replace(rabbitmq_queue_consumers, "service", "$1", "queue", "^([a-zA-Z0-9]+)[_.].*")
+
+      - record: rabbitmq_service_messages_ready_sum
+        expr: sum by (service) (rabbitmq_queue_messages_ready_with_service)
+
+      - record: rabbitmq_service_messages_unack_sum
+        expr: sum by (service) (rabbitmq_queue_messages_unack_with_service)
+
+      - record: rabbitmq_service_consumers_sum
+        expr: sum by (service) (rabbitmq_queue_consumers_with_service)
+
+      - record: rabbitmq_service_messages_total_sum
+        expr: sum by (service) (rabbitmq_queue_messages_total_with_service)
+
+      ### === Alerting Rules: Cảnh báo cho các queue ===
+
+      - alert: ServiceMessageWarning
+        expr: rabbitmq_service_messages_total_sum > 100
+        for: 15s
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ [WARNING] {{ $labels.service }} message count high"
+          description: |
+            **⚠️ Service:** `{{ $labels.service }}`
+            **📊 Messages Total:** `{{ $value }}`
+            **⏰ Level:** Warning
+            **🔍 Alert:** Total messages in queue vượt ngưỡng 100.
+
+      - alert: ServiceMessageCritical
+        expr: rabbitmq_service_messages_total_sum > 200
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: "🚨 [CRITICAL] {{ $labels.service }} message count too high"
+          description: |
+            **🚨 Service:** `{{ $labels.service }}`
+            **📊 Messages Total:** `{{ $value }}`
+            **⏰ Level:** Critical
+            **🔍 Alert:** Total messages in queue vượt ngưỡng 200.
+
+      - alert: ServiceReadyWarning
+        expr: rabbitmq_service_messages_ready_sum > 100
+        for: 15s
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ [WARNING] {{ $labels.service }} backlog cao"
+          description: |
+            **⚠️ Service:** `{{ $labels.service }}`
+            **📦 Messages Ready:** `{{ $value }}`
+            **⏰ Level:** Warning
+            **🕒 Alert:** Messages chưa xử lý đang tăng.
+
+      - alert: ServiceReadyCritical
+        expr: rabbitmq_service_messages_ready_sum > 200
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔥 [CRITICAL] {{ $labels.service }} backlog quá cao"
+          description: |
+            **🔥 Service:** `{{ $labels.service }}`
+            **📦 Messages Ready:** `{{ $value }}`
+            **⏰ Level:** Critical
+            **🕒 Alert:** Messages chưa xử lý vượt ngưỡng nguy hiểm.
+
+      - alert: ServiceUnackCritical
+        expr: rabbitmq_service_messages_unack_sum > 100
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔴 [CRITICAL] {{ $labels.service }} có nhiều messages chưa xử lý"
+          description: |
+            **🔴 Service:** `{{ $labels.service }}`
+            **⛔ Messages Unacknowledged:** `{{ $value }}`
+            **⏰ Level:** Critical
+            **🔍 Alert:** Messages đang chờ ack nhiều bất thường.
+
+      - alert: ServiceNoConsumer
+        expr: rabbitmq_service_consumers_sum < 1
+        for: 15s
+        labels:
+          severity: emergency
+        annotations:
+          summary: "🆘 [EMERGENCY] {{ $labels.service }} không có consumer"
+          description: |
+            **🆘 Service:** `{{ $labels.service }}`
+            **👤 Consumers:** `0`
+            **🚫 Alert:** Không có consumer nào đang kết nối hoặc xử lý queue.
