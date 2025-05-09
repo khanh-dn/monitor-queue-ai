@@ -39,7 +39,7 @@ groups:
           description: |
             **⚠️ Service:** `{{ $labels.service }}`
             **📊 Messages Total:** `{{ $value }}`
-            **⏰ Level:** Warning
+            **⏰ Level:** `Warning`
             **🔍 Alert:** Total messages in queue vượt ngưỡng 100.
 
       - alert: ServiceMessageCritical
@@ -52,7 +52,7 @@ groups:
           description: |
             **🚨 Service:** `{{ $labels.service }}`
             **📊 Messages Total:** `{{ $value }}`
-            **⏰ Level:** Critical
+            **⏰ Level:** `Critical`
             **🔍 Alert:** Total messages in queue vượt ngưỡng 200.
 
       - alert: ServiceReadyWarning
@@ -65,7 +65,7 @@ groups:
           description: |
             **⚠️ Service:** `{{ $labels.service }}`
             **📦 Messages Ready:** `{{ $value }}`
-            **⏰ Level:** Warning
+            **⏰ Level:** `Warning`
             **🕒 Alert:** Messages chưa xử lý đang tăng.
 
       - alert: ServiceReadyCritical
@@ -78,11 +78,11 @@ groups:
           description: |
             **🔥 Service:** `{{ $labels.service }}`
             **📦 Messages Ready:** `{{ $value }}`
-            **⏰ Level:** Critical
+            **⏰ Level:** `Critical`
             **🕒 Alert:** Messages chưa xử lý vượt ngưỡng nguy hiểm.
 
       - alert: ServiceUnackCritical
-        expr: rabbitmq_service_messages_unack_sum > 100
+        expr: rabbitmq_service_messages_unack_sum > 10
         for: 15s
         labels:
           severity: critical
@@ -91,17 +91,18 @@ groups:
           description: |
             **🔴 Service:** `{{ $labels.service }}`
             **⛔ Messages Unacknowledged:** `{{ $value }}`
-            **⏰ Level:** Critical
+            **⏰ Level:** `Critical`
             **🔍 Alert:** Messages đang chờ ack nhiều bất thường.
 
       - alert: ServiceNoConsumer
         expr: rabbitmq_service_consumers_sum < 1
         for: 15s
         labels:
-          severity: emergency
+          severity: critical
         annotations:
-          summary: "🆘 [EMERGENCY] {{ $labels.service }} không có consumer"
+          summary: "🆘 [CRITICAL] {{ $labels.service }} không có consumer"
           description: |
             **🆘 Service:** `{{ $labels.service }}`
             **👤 Consumers:** `0`
+            **⏰ Level:** `Critical`
             **🚫 Alert:** Không có consumer nào đang kết nối hoặc xử lý queue.
