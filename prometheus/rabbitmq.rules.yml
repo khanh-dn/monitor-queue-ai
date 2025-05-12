@@ -98,11 +98,11 @@ groups:
         expr: rabbitmq_service_consumers_sum < 1
         for: 15s
         labels:
-          severity: critical
+          severity: emergency
         annotations:
-          summary: "🆘 [CRITICAL] {{ $labels.service }} không có consumer"
+          summary: "🆘 [EMERGENCY] {{ $labels.service }} không có consumer"
           description: |
             **🆘 Service:** `{{ $labels.service }}`
             **👤 Consumers:** `0`
-            **⏰ Level:** `Critical`
+            **⏰ Level:** `Emergency`
             **🚫 Alert:** Không có consumer nào đang kết nối hoặc xử lý queue.
