@@ -3,8 +3,8 @@ global:
 
 route:
   group_wait: 5s
-  group_interval: 1m
-  repeat_interval: 15m
+  group_interval: 15s
+  repeat_interval: 30m
   receiver: discord
 
 receivers:

@@ -1,6 +1,6 @@
 groups:
   - name: rabbitmq-recording-and-alerts
-    interval: 30s
+    interval: 15s
     rules:
       ### === Recording Rules: Gán nhãn service cho các queue ===
       - record: rabbitmq_queue_messages_ready_with_service
@@ -26,6 +26,9 @@ groups:
 
       - record: rabbitmq_service_messages_total_sum
         expr: sum by (service) (rabbitmq_queue_messages_total_with_service)
+
+      - record: rabbitmq_service_consumers_delta
+        expr: rabbitmq_service_consumers_sum - rabbitmq_service_consumers_sum offset 15s
 
       ### === Alerting Rules: Cảnh báo cho các queue ===
 
@@ -106,3 +109,25 @@ groups:
             **👤 Consumers:** `0`
             **⏰ Level:** `Emergency`
             **🚫 Alert:** Không có consumer nào đang kết nối hoặc xử lý queue.
+
+      - alert: ServiceConsumerIncreased
+        expr: rabbitmq_service_consumers_delta > 0
+        for: 0s
+        labels:
+          severity: info
+        annotations:
+          summary: "🟢 Consumer increased for {{ $labels.service }}"
+          description: |
+            **Service:** `{{ $labels.service }}`
+            **👥 Consumers Increased By:** `{{ printf "%+.0f" $value }}`
+
+      - alert: ServiceConsumerDecreased
+        expr: rabbitmq_service_consumers_delta < 0
+        for: 0s
+        labels:
+          severity: warning
+        annotations:
+          summary: "🔻 Consumer decreased for {{ $labels.service }}"
+          description: |
+            **Service:** `{{ $labels.service }}`
+            **👥 Consumers Decreased By:** `{{ printf "%+.0f" $value }}`
